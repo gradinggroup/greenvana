@@ -31,6 +31,7 @@ class User extends Authenticatable
         'password',
         'last_seen',
         'client_id',
+        'role',
     ];
 
     /**

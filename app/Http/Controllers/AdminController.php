@@ -62,9 +62,17 @@ class AdminController extends Controller
     public function store(LoginRequest $request)
     {
         return $this->loginPipeline($request)->then(function ($request) {
-            return app(LoginResponse::class);
+            $user = $this->guard->user(); // Ambil user yang baru login
+    
+            // Cek role-nya
+            if ($user->role === 'admin') {
+                return redirect()->route('admin.dashboard');
+            }
+    
+            return redirect()->route('dashboard'); // Default user dashboard
         });
     }
+    
 
     /**
      * Get the authentication pipeline instance.

@@ -54,7 +54,7 @@ Route::group(['prefix'=> 'admin', 'middleware'=>['admin:admin']], function(){
 Route::middleware(['auth:admin'])->group(function(){
 
     Route::middleware(['auth:sanctum,admin', 'verified'])->get('/admin/dashboard', function () {
-    return view('admin.index');
+        return view('admin.index');
     })->name('dashboard');
 
     Route::get('/admin/logout', [AdminController::class, 'destroy'])->name('admin.logout');
@@ -259,6 +259,7 @@ Route::middleware(['auth:sanctum,web', 'verified'])->get('/dashboard', function 
     $user = User::find($id);
     return view('dashboard',compact('user'));
 })->name('dashboard');
+
 
 
 Route::get('/auth/redirect', [SocialiteController::class, 'redirect']);
