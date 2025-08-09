@@ -6,11 +6,12 @@ use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Hash;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class SocialiteController extends Controller
 {
-    
     public function redirect()
     {
         return Socialite::driver('google')->redirect();
@@ -18,49 +19,46 @@ class SocialiteController extends Controller
 
     public function callback()
     {
-         try {
+        try {
+            // Gunakan stateless kalau sering kena InvalidStateException
+            $googleUser = Socialite::driver('google')->stateless()->user();
 
-             $user = Socialite::driver('google')->user();
+            // Cek user berdasarkan email
+            $user = User::where('email', $googleUser->getEmail())->first();
 
-             $findUser = User::where('client_id', $user->id)->first();
-
-             if($findUser){
-
-                $findUser->update([
-                    'client_id' => $findUser->id
+            if ($user) {
+                // Update data user
+                $user->update([
+                    'name'      => $googleUser->getName(),
+                    'client_id' => $googleUser->getId(),
                 ]);
-
-
-                $notification = array(
-                    'message' => 'Anda Berhasil Login',
-                    'alert-type' => 'success'
-                );
-
-                Auth::login($findUser);
-                return redirect('/dashboard')->with($notification);
-
-             }else{
-
-                $newUser = User::create([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'client_id' => $user->id,
-                    'password' => Hash::make('user12345'),
+            } else {
+                // Buat user baru
+                $user = User::create([
+                    'name'      => $googleUser->getName(),
+                    'email'     => $googleUser->getEmail(),
+                    'client_id' => $googleUser->getId(),
+                    'password'  => Hash::make(Str::random(16)), // Password random
                 ]);
+            }
 
-                $notification = array(
-                    'message' => 'Anda Berhasil Login',
-                    'alert-type' => 'success'
-                );
+            Auth::login($user);
 
-                Auth::login($newUser);
-                return redirect('/dashboard')->with($notification);
+            return redirect('/dashboard')->with([
+                'message' => 'Anda Berhasil Login',
+                'alert-type' => 'success'
+            ]);
 
-             }
-             
-         } catch (Exception $e) {
-             
-         }
+        } catch (InvalidStateException $e) {
+            return redirect('/login')->with([
+                'message' => 'Sesi login Google kadaluarsa, silakan coba lagi.',
+                'alert-type' => 'error'
+            ]);
+        } catch (\Exception $e) {
+            return redirect('/login')->with([
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'alert-type' => 'error'
+            ]);
+        }
     }
-
 }

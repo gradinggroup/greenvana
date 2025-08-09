@@ -23,7 +23,6 @@
     <h4 class="">Sign in</h4>
     <p class="">Hello, Welcome to your account.</p>
     <div class="social-sign-in outer-top-xs">
-        <a href="#" class="facebook-sign-in"><i class="fa fa-facebook"></i> Sign In with Facebook</a>
         <a href="{{ url('/auth/redirect') }}" class="twitter-sign-in"><i class="fa fa-google"></i> Sign In with Google</a>
     </div>
 

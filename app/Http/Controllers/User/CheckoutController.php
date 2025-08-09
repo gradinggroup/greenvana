@@ -18,8 +18,10 @@ use App\Models\Village;
 use App\Models\Order;
 use App\Models\OrderItem;
 
-use Auth;
+use Illuminate\Support\Facades\Auth;
+
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use PDF;
 
 class CheckoutController extends Controller
@@ -27,45 +29,54 @@ class CheckoutController extends Controller
 
     public function checkoutDetil(Request $request)
     {
-
-        if(Session::has('coupon')){
+        if (Session::has('coupon')) {
             $total_amount = Session::get('coupon')['total_amount'];
-        }else{
-            $total_amount = (int)str_replace(',','', Cart::subtotal());
+        } else {
+            $total_amount = (int) str_replace(',', '', Cart::subtotal());
         }
-
+        Log::info('Checkout request alamat:', [
+            'provinsi' => $request->provinsi,
+            'kabupaten_kota' => $request->kabupaten_kota,
+            'kecamatan' => $request->kecamatan,
+            'kelurahan_desa' => $request->kelurahan_desa,
+        ]);
+    
         $name = $request->name;
         $email = $request->email;
         $phone = $request->phone;
         $postCode = $request->post_code;
         $notes = $request->notes;
-
-        $province = Province::where('id', $request->province_id)->first();
-        $regency =  Regency::where('id', $request->regency_id)->first();
-        $district =  District::where('id', $request->district_id)->first();
-        $village = Village::where('id', $request->village_id)->first();
-
+    
+        // Ambil data lokasi (string) langsung dari request
+        $provinsi = $request->provinsi;
+        $kabupaten_kota = $request->kabupaten_kota;
+        $kecamatan = $request->kecamatan;
+        $kelurahan_desa = $request->kelurahan_desa;
+    
         $order_id = Order::insertGetId([
             'user_id' => Auth::id(),
-            'province_id' => $request->province_id,
-            'regency_id' => $request->regency_id,
-            'district_id' => $request->district_id,
-            'village_id' => $request->village_id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'post_code' => $request->post_code,
-            'notes' => $request->notes,
+            'name'  => Auth::user()->name,
+            'provinsi' => $provinsi,
+            'kabupaten_kota' => $kabupaten_kota,
+            'kecamatan' => $kecamatan,
+            'kelurahan_desa' => $kelurahan_desa,
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone,
+            'post_code' => $postCode,
+            'notes' => $notes,
+            'payment_type' => $request->payment_type,
             'amount' => $total_amount,
-            'invoice_no' => 'MS'.mt_rand(10000000,99999999),
+            'transaction_id' => date('d-m-Y') . '-' . mt_rand(1000, 9999),
+            'invoice_no' => 'MS' . mt_rand(10000000, 99999999),
+            'confirmed_date' => Carbon::now(),
             'order_date' => Carbon::now()->format('d F Y'),
             'order_month' => Carbon::now()->format('F'),
             'order_year' => Carbon::now()->format('Y'),
             'status' => 'Pending',
             'created_at' => Carbon::now(),
         ]);
-
-
+    
         $carts = Cart::content();
         foreach ($carts as $cart) {
             OrderItem::insert([
@@ -78,41 +89,50 @@ class CheckoutController extends Controller
                 'created_at' => Carbon::now(),
             ]);
         }
-
-        // Set your Merchant Server Key
+    
+        // Konfigurasi Midtrans
         \Midtrans\Config::$serverKey = config('midtrans.server_key');
-        // Set to Development/Sandbox Environment (default). Set to true for Production Environment (accept real transaction).
         \Midtrans\Config::$isProduction = false;
-        // Set sanitization on (default)
         \Midtrans\Config::$isSanitized = true;
-        // Set 3DS transaction for credit card to true
         \Midtrans\Config::$is3ds = true;
-
-        $params = array(
-            'transaction_details' => array(
-                'order_id' => rand(),
-                'gross_amount' => $total_amount,
-            ),
-            'customer_details' => array(
+    
+        $params = [
+            'transaction_details' => [
+                'order_id' => $order_id,
+                'gross_amount' => max(100, $total_amount), // minimal Rp 100 agar tidak error Midtrans
+            ],
+            'customer_details' => [
                 'first_name' => $name,
                 'email' => $email,
                 'phone' => $phone,
-            ),
-        );
-
+            ],
+        ];
+    
         $snapToken = \Midtrans\Snap::getSnapToken($params);
-
-        if(Session::has('coupon')){
+    
+        if (Session::has('coupon')) {
             Session::forget('coupon');
         }
-
+    
         Cart::destroy();
-
-
-
-        return view('frontend.checkout.detil_checkout', compact('carts', 'name','email','phone','province','regency','district','village','postCode','notes','total_amount','snapToken','order_id'));
-        
+    
+        return view('frontend.checkout.detil_checkout', compact(
+            'carts',
+            'name',
+            'email',
+            'phone',
+            'provinsi',
+            'kabupaten_kota',
+            'kecamatan',
+            'kelurahan_desa',
+            'postCode',
+            'notes',
+            'total_amount',
+            'snapToken',
+            'order_id'
+        ));
     }
+    
 
 
     public function checkoutStore(Request $request)
@@ -142,12 +162,20 @@ class CheckoutController extends Controller
 
     public function orderDetil($id)
     {
-        $order = Order::with('province','regency','district','village')->where('id', $id)->where('user_id',Auth::id())->first();
-        $orderItem = OrderItem::with('product')->where('order_id',$id)->orderBy('id', 'DESC')->get();
-
-
-        return view('frontend.user.order.order_detil',compact('order','orderItem'));
+        $order = Order::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->first();
+    
+        $orderItem = OrderItem::with('product')
+            ->where('order_id', $id)
+            ->orderBy('id', 'DESC')
+            ->get();
+                // cek dulu isi $order sebelum dikirim
+    Log::info('Order data:', $order ? $order->toArray() : ['order' => 'null']);
+    
+        return view('frontend.user.order.order_detil', compact('order', 'orderItem'));
     }
+    
 
     public function downloadInvoice($id)
     {

@@ -355,48 +355,106 @@
 	  </div>
 
 
-<script type="text/javascript">
-  	$(document).ready(function(){
-  		$('select[name="category_id"]').on('change', function(){
-  			var category_id = $(this).val();
-  			if(category_id){
-  				$.ajax({
-  					url: "{{ url('/admin/category/subcategory/ajax') }}/"+category_id,  				
-  					type:"GET",
-  					dataType:"json",
-  					success:function(data){
-  						$('select[name="subsubcategory_id"]').html('');
-  						var d = $('select[name="subcategory_id"]').empty();
-  						$.each(data, function(key, value){
-  							$('select[name="subcategory_id"]').append('<option value="'+ value.id +'">'+value.subcategory_name_en +'</option>');
-  						});
-  					},
-  				});
-  			}else{
-  				alert('danger');
-  			} 
-  		});
+	  <script type="text/javascript">
+$(document).ready(function(){
+    console.log('Document ready - jQuery version:', $.fn.jquery);
+    console.log('Category select exists:', $('select[name="category_id"]').length);
+    console.log('Subcategory select exists:', $('select[name="subcategory_id"]').length);
+    console.log('SubSubcategory select exists:', $('select[name="subsubcategory_id"]').length);
+    
+    // Event untuk Category -> SubCategory
+    $('select[name="category_id"]').on('change', function(){
+        var category_id = $(this).val();
+        console.log('Category changed to:', category_id);
+        
+        if(category_id){
+            $.ajax({
+                url: "{{ url('/admin/category/subcategory/ajax') }}/"+category_id,
+                type:"GET",
+                dataType:"json",
+                beforeSend: function(){
+                    console.log('Sending request to subcategory endpoint');
+                },
+                success:function(data){
+                    console.log('Subcategory data received:', data);
+                    console.log('Number of subcategories:', data.length);
+                    
+                    // Clear subsubcategory first
+                    $('select[name="subsubcategory_id"]').html('<option selected="" disabled="">-- Pilih Sub-SubCategory --</option>');
+                    
+                    // Clear and populate subcategory
+                    var subcategorySelect = $('select[name="subcategory_id"]').empty();
+                    subcategorySelect.append('<option selected="" disabled="">-- Pilih SubCategory --</option>');
+                    
+                    $.each(data, function(key, value){
+                        subcategorySelect.append('<option value="'+ value.id +'">'+value.subcategory_name_en +'</option>');
+                    });
+                    
+                    console.log('Subcategory options populated');
+                },
+                error: function(xhr, status, error) {
+                    console.log('Subcategory AJAX Error:', error);
+                    console.log('Status:', status);
+                    console.log('Response:', xhr.responseText);
+                    alert('Error loading subcategory data');
+                }
+            });
+        }else{
+            console.log('No category selected');
+        } 
+    });
 
-  		$('select[name="subcategory_id"]').on('change', function(){
-  			var subcategory_id = $(this).val();
-  			if(subcategory_id){
-  				$.ajax({
-  					url: "{{ url('/admin/category/subsubcategory/ajax') }}/"+subcategory_id,  				
-  					type:"GET",
-  					dataType:"json",
-  					success:function(data){
-  						var d = $('select[name="subsubcategory_id"]').empty();
-  						$.each(data, function(key, value){
-  							$('select[name="subsubcategory_id"]').append('<option value="'+ value.id +'">'+value.subsubcategory_name_en +'</option>');
-  						});
-  					},
-  				});
-  			}else{
-  				alert('danger');
-  			} 
-  		});
-  	});
-  </script>
+    // Event untuk SubCategory -> SubSubCategory
+    $('select[name="subcategory_id"]').on('change', function(){
+        var subcategory_id = $(this).val();
+        console.log('Subcategory changed to:', subcategory_id);
+        
+        if(subcategory_id){
+            $.ajax({
+                url: "{{ url('/admin/category/subsubcategory/ajax') }}/"+subcategory_id,
+                type:"GET",
+                dataType:"json",
+                beforeSend: function(){
+                    console.log('Sending request to subsubcategory endpoint');
+                },
+                success:function(data){
+                    console.log('SubSubCategory data received:', data);
+                    console.log('Number of subsubcategories:', data.length);
+                    
+                    var subsubcategorySelect = $('select[name="subsubcategory_id"]').empty();
+                    subsubcategorySelect.append('<option selected="" disabled="">-- Pilih Sub-SubCategory --</option>');
+                    
+                    $.each(data, function(key, value){
+                        subsubcategorySelect.append('<option value="'+ value.id +'">'+value.subsubcategory_name_en +'</option>');
+                    });
+                    
+                    console.log('SubSubCategory options populated');
+                },
+                error: function(xhr, status, error) {
+                    console.log('SubSubCategory AJAX Error:', error);
+                    console.log('Status:', status);
+                    console.log('Response:', xhr.responseText);
+                    console.log('Full XHR object:', xhr);
+                    alert('Error loading subsubcategory data: ' + error);
+                }
+            });
+        }else{
+            console.log('No subcategory selected');
+        }
+    });
+    
+    // Test manual untuk melihat apakah event listener terpasang
+    setTimeout(function(){
+        console.log('Testing event listeners...');
+        console.log('Category select value:', $('select[name="category_id"]').val());
+        console.log('Subcategory select value:', $('select[name="subcategory_id"]').val());
+        console.log('SubSubcategory select value:', $('select[name="subsubcategory_id"]').val());
+    }, 1000);
+});
+
+// Test di luar document ready
+console.log('Script loaded outside document ready');
+</script>
 
   <script type="text/javascript">
   	function mainThamUrl(input){

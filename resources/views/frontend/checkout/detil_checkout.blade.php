@@ -79,7 +79,13 @@
 									<hr>
 									<strong>Phone: </strong>{{ $phone }}
 									<hr>
-									<strong>Address: </strong>{{$village->name}} {{$district->name}} {{$regency->name}} {{$province->name}}. {{ $postCode }}
+									<strong>Address: </strong>
+										{{ $kelurahan_desa ?? '-' }} 
+										{{ $kecamatan ?? '-' }} 
+										{{ $kabupaten_kota ?? '-' }} 
+										{{ $provinsi ?? '-' }}. 
+										{{ $post_code ?? '' }}
+
 								</div>
 							</div>
 						</div>

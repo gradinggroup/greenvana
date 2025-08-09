@@ -24,8 +24,7 @@ use App\Http\Controllers\Frontend\CartController;
 use App\Http\Controllers\User\WishlistController;
 use App\Http\Controllers\User\CartPageController;
 use App\Http\Controllers\User\CheckoutController;
-
-
+use App\Http\Controllers\WilayahController;
 use App\Models\User;
 
 /*
@@ -355,4 +354,12 @@ Route::post('/checkout-store', [CheckoutController::class, 'checkoutStore'])->na
 
 //end checkout routes
 
+
+//route api
+
+// routes/web.php
+Route::get('/api/provinsi', [WilayahController::class, 'getProvinsi']);
+Route::get('/api/kota/{provinsi}', [WilayahController::class, 'getKota']);
+Route::get('/api/kecamatan/{kota}', [WilayahController::class, 'getKecamatan']);
+Route::get('/api/desa/{kecamatan}', [WilayahController::class, 'getDesa']);
 
