@@ -65,7 +65,7 @@
 					<strong>Name: </strong> {{ $order->name }}<br>
 					<strong>Email: </strong> {{ $order->email }}<br>
 					<strong>Phone: </strong> {{ $order->phone }}<br>
-					<strong>Address: </strong> {{ $order->village->name }}, {{ $order->district->name }}, {{ $order->regency->name }}, {{ $order->province->name }}<br>
+					<strong>Address: </strong> {{ $order->kelurahan_desa }} {{ $order->kecamatan }}{{ $order->kabupaten_kota }} {{ $order->provinsi }}. {{ $order->post_code }}<br>
 					<strong>Post Code: </strong> {{ $order->post_code }} 
 				</p>
 			</td>

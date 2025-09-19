@@ -28,7 +28,7 @@
                             <div id="collapseOne" class="panel-collapse collapse in">
                                 <!-- panel-body  -->
                                 <div class="panel-body">
-                                    <div class="row">		
+                                    <div cla    ss="row">		
                                         <!-- guest-login -->			
                                         <div class="col-md-6 col-sm-6 guest-login">
                                             <h4 class="checkout-subtitle"><b>Alamat Pembeli</b></h4>
@@ -57,18 +57,25 @@
                                                     <input type="text" class="form-control unicase-form-control text-input" id="postcode" name="post_code" placeholder="Input Your Post Code">
                                                 </div>
 
-                                                <!-- Payment Type -->
-                                                <div class="form-group">
-                                                    <h5><b>Metode Pembayaran</b> <span class="text-danger">*</span></h5>
-                                                    <div class="controls">
-                                                        <select class="form-control" name="payment_type" required>
-                                                            <option value="" disabled selected>Pilih Bank</option>
-                                                            <option value="BCA">BCA</option>
-                                                            <option value="BRI">BRI</option>
-                                                            <option value="Mandiri">Mandiri</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
+                                                <!-- Alamat lengkap dengan API -->
+<div class="form-group">
+    <label>Alamat Lengkap</label>
+    <textarea id="alamat_lengkap" name="alamat_lengkap" class="form-control"  placeholder="Ketik alamat..." required></textarea>
+    <div id="suggestions" class="list-group mt-2"></div>
+</div>
+
+
+<div class="form-group">
+    <input type="hidden" id="latitude" name="latitude" class="form-control" placeholder="Latitude" >
+</div>
+
+<div class="form-group">
+    <input type="hidden" id="longitude" name="longitude" class="form-control" placeholder="Longitude" >
+</div>
+
+
+<button type="button" id="gpsButton" class="btn btn-info mt-2">Isi dengan GPS Saya</button>
+
                                         </div>
                                         <!-- guest-login -->
 
@@ -129,46 +136,68 @@
                                 <div class="panel-heading">
                                     <h4 class="unicase-checkout-title">Your Checkout Progress</h4>
                                 </div>
-                                <div class="">
-                                    <ul class="nav nav-checkout-progress list-unstyled">
-                                        @foreach($carts as $item)
-                                        <li>
-                                            <strong>Image: </strong>
-                                            <img src="{{ asset($item->options->image) }}" style="height: 50px; width: 50px;">
-                                        </li>
-                                        <li>
-                                            <strong>Qty: </strong>
-                                            ( {{ $item->qty }} )
-                                            <strong>Color: </strong>
-                                            {{ $item->options->color }}
-                                            <strong>Size: </strong>
-                                            {{ $item->options->size }}
-                                        </li>
-                                        @endforeach
+<!-- Bagian ringkasan checkout -->
+<div class="">
+    <ul class="nav nav-checkout-progress list-unstyled">
+        @foreach($carts as $item)
+        <li>
+            <strong>Image: </strong>
+            <img src="{{ asset($item->options->image) }}" style="height: 50px; width: 50px;">
+        </li>
+        <li>
+            <strong>Qty: </strong> ( {{ $item->qty }} )
+            <strong>Color: </strong> {{ $item->options->color }}
+            <strong>Size: </strong> {{ $item->options->size }}
+        </li>
+        @endforeach
 
-                                        @if(Session::has('coupon'))
-                                            <hr>
-                                            <strong>Subtotal: </strong>Rp. {{ $total }}
-                                            <hr>
-                                            <strong>Coupon Name: </strong>{{ session()->get('coupon')['coupon_name'] }}
-                                            ( {{ session()->get('coupon')['coupon_discount'] }} % )
-                                            <hr>
-                                            <strong>Coupon Discount: </strong>Rp. {{ session()->get('coupon')['discount_amount'] }}
-                                            <hr>
-                                            <strong>Grand Total: </strong>Rp. {{ session()->get('coupon')['total_amount'] }}
-                                            <hr>
-                                        @else
-                                            <hr>
-                                            <strong>Subtotal: </strong>Rp. {{ $total }} <hr>
-                                            <strong>Grand Total: </strong>Rp. {{ $total }} <hr>					
-                                        @endif
+        <!-- Hidden data koordinat toko -->
+        <input type="hidden" id="store_lat" value="{{ $store->latitude }}">
+        <input type="hidden" id="store_lon" value="{{ $store->longitude }}">
+        <input type="hidden" id="ongkir_per_km" value="{{ $store->ongkir_per_km }}">
 
-                                        <hr>
-                                        <button type="submit" class="btn btn-primary">Lanjutkan Checkout</button>
-                                    </form>
-                                    <!-- end form action -->
-                                    </ul>		
-                                </div>
+
+        <input type="hidden" name="jarak" id="jarak_hidden">
+
+        <hr>
+<p><strong>Subtotal: </strong>Rp 
+    <span id="subtotal_text">{{ number_format((float)$total, 0, ',', '.') }}</span>
+</p>
+<input type="hidden" id="subtotal_hidden" value="{{ (float)$total }}">
+
+                <!-- Tempat tampilkan jarak -->
+        <p id="jarak" class="mt-2 text-success"></p>
+        <p id="ongkir" class="text-info"><strong>Ongkir: </strong>Rp 0</p>
+        <input type="hidden" name="ongkir" id="ongkir_hidden" value="0">
+
+<select class="form-control" id="voucher_select" name="voucher_id">
+    <option value="" data-diskon="0">-- Tidak pakai voucher --</option>
+    @foreach($vouchers as $voucher)
+        <option value="{{ $voucher->id }}" data-diskon="{{ $voucher->nominal }}">
+            {{ $voucher->code }} - Potongan Rp {{ number_format($voucher->nominal, 0, ',', '.') }}
+        </option>
+    @endforeach
+</select>
+
+<p id="voucher_info" class="text-success"></p>
+<input type="hidden" id="diskon_hidden" value="0">
+
+<label>Total Poin Anda :</label>
+<input type="text" id="user_poin" value="{{ $poin_user }}" disabled>
+<input type="hidden" name="use_poin" id="use_poin" value="0">
+
+
+
+        <hr>
+        <p><strong>Grand Total: </strong>Rp <span id="grand_total">{{ number_format((float)$total, 0, ',', '.') }}
+</span></p>
+        <input type="hidden" name="grand_total" id="grand_total_hidden" value="{{ $total }}">
+        <hr>
+
+        <button type="submit" class="btn btn-primary btn-block">Lanjutkan Checkout</button>
+    </ul>
+</div>
+
                             </div>
                         </div>
                     </div> 
@@ -178,6 +207,75 @@
         </div><!-- /.checkout-box -->
     </div><!-- /.container -->
 </div><!-- /.body-content -->
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+
+    // Autocomplete dari Nominatim (OpenStreetMap)
+    $("#alamat_lengkap").on("input", function() {
+        let query = $(this).val();
+        if(query.length > 3) {
+            $.get("https://nominatim.openstreetmap.org/search", {
+                q: query,
+                format: "json",
+                addressdetails: 1,
+                limit: 5,
+                countrycodes: "id" // hanya Indonesia
+            }, function(data) {
+                $("#suggestions").empty();
+                data.forEach(function(item) {
+                    $("#suggestions").append(
+                        `<a href="#" class="list-group-item list-group-item-action suggestion" 
+                            data-lat="${item.lat}" 
+                            data-lon="${item.lon}">
+                            ${item.display_name}
+                        </a>`
+                    );
+                });
+            });
+        }
+    });
+
+// Klik salah satu suggestion
+$(document).on("click", ".suggestion", function(e) {
+    e.preventDefault();
+    let text = $(this).text().trim(); // 🔥 hapus spasi/tab di awal & akhir
+    $("#alamat_lengkap").val(text);
+    $("#latitude").val($(this).data("lat"));
+    $("#longitude").val($(this).data("lon"));
+    $("#suggestions").empty();
+});
+
+
+    // Tombol GPS
+    $("#gpsButton").click(function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                let lat = position.coords.latitude;
+                let lon = position.coords.longitude;
+                $("#latitude").val(lat);
+                $("#longitude").val(lon);
+
+                // Reverse geocode untuk alamat
+                $.get("https://nominatim.openstreetmap.org/reverse", {
+                    lat: lat,
+                    lon: lon,
+                    format: "json"
+                }, function(data) {
+                    if (data && data.display_name) {
+                        $("#alamat_lengkap").val(data.display_name);
+                    }
+                });
+            });
+        } else {
+            alert("Browser tidak mendukung GPS");
+        }
+    });
+
+});
+</script>
+
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
@@ -313,5 +411,160 @@ $(document).ready(function(){
 
 });
 </script>
+<script>
+$(document).ready(function(){
+
+    // Ambil koordinat toko dari hidden input
+    const storeLat = parseFloat($("#store_lat").val());
+    const storeLon = parseFloat($("#store_lon").val());
+
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371; // radius bumi (km)
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return (R * c).toFixed(2);
+    }
+
+    // Klik suggestion
+    $(document).on("click", ".suggestion", function(e) {
+        e.preventDefault();
+        let lat = parseFloat($(this).data("lat"));
+        let lon = parseFloat($(this).data("lon"));
+
+        $("#alamat_lengkap").val($(this).text().trim());
+        $("#latitude").val(lat);
+        $("#longitude").val(lon);
+
+        let jarak = haversine(storeLat, storeLon, lat, lon);
+        $("#jarak").text(`Jarak ke toko: ${jarak} km`);
+        $("#jarak_hidden").val(jarak);
+
+        // hitung ongkir + update total
+        updateOngkir(jarak);
+
+
+        $("#suggestions").empty();
+    });
+
+    // Gunakan GPS
+    $("#gpsButton").click(function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                let lat = position.coords.latitude;
+                let lon = position.coords.longitude;
+
+                $("#latitude").val(lat);
+                $("#longitude").val(lon);
+
+                let jarak = haversine(storeLat, storeLon, lat, lon);
+                $("#jarak").text(`Jarak ke toko: ${jarak} km`);
+                $("#jarak_hidden").val(jarak);
+
+                // hitung ongkir + update total
+                updateOngkir(jarak);
+
+
+                $.get("https://nominatim.openstreetmap.org/reverse", {
+                    lat: lat, lon: lon, format: "json"
+                }, function(data) {
+                    if (data && data.display_name) {
+                        $("#alamat_lengkap").val(data.display_name);
+                    }
+                });
+            });
+        } else {
+            alert("Browser tidak mendukung GPS");
+        }
+    });
+
+});
+function formatRupiah(angka) {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'decimal',
+        maximumFractionDigits: 0
+    }).format(angka);
+}
+
+function updateOngkir(jarak) {
+    const ongkirPerKm = parseFloat($("#ongkir_per_km").val());
+    let ongkir = Math.round(jarak * ongkirPerKm);
+
+    // tampilkan ongkir
+    $("#ongkir").html(`<strong>Ongkir: </strong>Rp ${formatRupiah(ongkir)}`);
+
+    // ambil subtotal
+    let subtotal = parseFloat($("#subtotal_hidden").val());
+    let grandTotal = subtotal + ongkir;
+
+    // update Grand Total
+    $("#grand_total").text(`Rp ${formatRupiah(grandTotal)}`);
+
+    // simpan ke hidden input
+    $("#ongkir_hidden").val(ongkir);
+    $("#grand_total_hidden").val(grandTotal);
+}
+
+
+$(document).ready(function(){
+
+    // 🔹 Event pilih voucher
+    $("#voucher_select").on("change", function(){
+        let diskon = parseFloat($("#voucher_select option:selected").data("diskon")) || 0;
+        $("#diskon_hidden").val(diskon);
+
+        if (diskon > 0) {
+            $("#voucher_info").text(`Voucher terpakai, potongan Rp ${formatRupiah(diskon)}`);
+        } else {
+            $("#voucher_info").text("");
+        }
+
+        hitungGrandTotal();
+    });
+
+    // 🔹 Hitung total pertama kali saat halaman diload
+    hitungGrandTotal();
+});
+
+// 🔹 Fungsi hitung ulang Grand Total
+function hitungGrandTotal() {
+    let subtotal = parseFloat($("#subtotal_hidden").val()) || 0;
+    let ongkir = parseFloat($("#ongkir_hidden").val()) || 0;
+    let diskon = parseFloat($("#diskon_hidden").val()) || 0;
+    let userPoin = parseInt($("#user_poin").val()) || 0;
+
+    let grandTotal = subtotal + ongkir - diskon;
+
+if (userPoin >= 100) {
+    grandTotal = 0;
+    $("#voucher_info").text("🎉 Selamat! Poin Anda sudah 100, belanja gratis.");
+    $("#use_poin").val(1); // ✅ kasih tanda ke backend kalau poin dipakai
+} else {
+    $("#use_poin").val(0);
+}
+
+
+    if (grandTotal < 0) grandTotal = 0;
+
+    $("#grand_total").text(`Rp ${formatRupiah(grandTotal)}`);
+    $("#grand_total_hidden").val(grandTotal);
+}
+
+
+// 🔹 Format angka ke Rupiah
+function formatRupiah(angka) {
+    return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+
+</script>
+
+
+
 
 @endsection

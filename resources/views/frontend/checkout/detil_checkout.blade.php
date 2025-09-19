@@ -53,7 +53,9 @@
 								<hr>
 								@endforeach
 
-								<h4 class="unicase-checkout-title">Grand Total: Rp. {{ $total_amount }}</h4>
+								<h4 class="unicase-checkout-title">Grand Total: Rp. {{ number_format($grandTotal, 0, ',', '.') }}</h4>
+
+
 
 							</div>
 						</div>

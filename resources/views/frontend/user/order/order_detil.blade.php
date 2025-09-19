@@ -24,7 +24,7 @@
                             <tr>
                                 <td>{{ $order->name }}</td>
                                 <td>{{ $order->phone }}</td>
-                                <td>{{ $order->village->name }} {{ $order->district->name }}{{ $order->regency->name }} {{ $order->province->name }}. {{ $order->post_code }}</td>
+                                <td>{{ $order->kelurahan_desa }} {{ $order->kecamatan }}{{ $order->kabupaten_kota }} {{ $order->provinsi }}. {{ $order->post_code }}</td>
                             </tr>
                             
                         </tbody>  

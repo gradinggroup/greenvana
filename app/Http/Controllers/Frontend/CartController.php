@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Session;
 
 use Carbon\Carbon;
 use Auth;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
@@ -160,13 +161,20 @@ class CartController extends Controller
 
             if(Cart::total() > 0){
 
+                $user = Auth::user();
                 $carts = Cart::content();
                 $cartQty = Cart::count();
                 $total = Cart::subtotal();
-
+                $store = \App\Models\StoreAddress::first(); // ambil alamat toko
                 $provinces = Province::all();
+                $total = (int) preg_replace('/\D/', '', $total);
+                $vouchers = \App\Models\Voucher::where('user_id', Auth::id())
+                ->where('status', 'aktif')
+                ->get();
+                $poin_user = DB::table('poin_users')->where('user_id', $user->id)->value('total_poin') ?? 0;
 
-                return view('frontend.checkout.checkout_view', compact('carts', 'cartQty', 'total','provinces')); 
+
+                return view('frontend.checkout.checkout_view', compact('carts','store', 'cartQty', 'total','provinces','vouchers','poin_user')); 
 
             }else{
 

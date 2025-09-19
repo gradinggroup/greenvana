@@ -40,7 +40,12 @@
 											</td>
 											<td>
 												<span class="text-fade font-weight-600 d-block font-size-16">
-													{{ $order->village->name }} {{ $order->district->name }} {{ $order->regency->name }} {{ $order->province->name }}
+												{{ $order->kelurahan_desa ?? '-' }} 
+{{ $order->kecamatan ?? '-' }} 
+{{ $order->kabupaten_kota ?? '-' }} 
+{{ $order->provinsi ?? '-' }} 
+{{ $order->post_code ?? '' }}
+
 												</span>
 											</td>
 										</tr>

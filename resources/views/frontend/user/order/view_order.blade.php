@@ -1,6 +1,11 @@
 @extends('frontend.main_master')
 @section('content')
 
+@if(session('error'))
+<script>
+    alert("{{ session('error') }}");
+</script>
+@endif
 
 <div class="body-content">
     <div class="container">
@@ -42,6 +47,15 @@
                                 <td>
                                     <a href="{{ route('order.detil',$order->id) }}" class="btn btn-sm btn-primary"><i class="fa fa-eye"></i> View</a>
                                     <a href="{{ route('invoice',$order->id) }}" class="btn btn-sm btn-danger" target="_blank"><i class="fa fa-download"></i> Invoice</a>
+    @if($order->amount >= 20000)
+        <a href="{{ route('game.page', ['order_id' => $order->id]) }}" class="btn btn-success mt-2">
+            🎮 Game
+        </a>
+    @endif
+
+
+
+
                                 </td>
                             </tr>
                             @endforeach

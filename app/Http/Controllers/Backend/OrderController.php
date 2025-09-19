@@ -31,14 +31,14 @@ class OrderController extends Controller
 
     public function ordersDetail($id)
     {
-        $order = Order::with('province','regency','district','village')->where('id',$id)->first();
+        $order = Order::where('id',$id)->first();
         $orderItem = OrderItem::with('product')->where('order_id',$id)->orderBy('id','DESC')->get();
         return view('admin.order.order_detail',compact('order','orderItem'));
     }
 
     public function downloadInvoice($id)
     {
-        $order = Order::with('province','regency','district','village')->where('id', $id)->first();
+        $order = Order::where('id', $id)->first();
         $orderItem = OrderItem::with('product')->where('order_id',$id)->orderBy('id', 'DESC')->get();
 
 

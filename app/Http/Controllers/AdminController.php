@@ -69,7 +69,7 @@ class AdminController extends Controller
                 return redirect()->route('admin.dashboard');
             }
     
-            return redirect()->route('dashboard'); // Default user dashboard
+            return redirect()->route('admin.dashboard'); // Default user dashboard
         });
     }
     
@@ -108,15 +108,15 @@ class AdminController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Laravel\Fortify\Contracts\LogoutResponse
      */
-    public function destroy(Request $request): LogoutResponse
-    {
-        $this->guard->logout();
+public function destroy(Request $request)
+{
+    $this->guard->logout();
 
-        $request->session()->invalidate();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
 
-        $request->session()->regenerateToken();
+    return redirect()->route('fe.admin.login');
+}
 
-        return app(LogoutResponse::class);
-    }
 }
 

@@ -21,6 +21,7 @@ use App\Models\OrderItem;
 use Illuminate\Support\Facades\Auth;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PDF;
 
@@ -40,6 +41,21 @@ class CheckoutController extends Controller
             'kecamatan' => $request->kecamatan,
             'kelurahan_desa' => $request->kelurahan_desa,
         ]);
+
+
+            $ongkir = $request->ongkir_hidden ?? 0;
+    $diskon = $request->diskon_hidden ?? 0;
+    $usePoin = $request->use_poin ?? 0;
+
+    $grandTotal = $request->grand_total;
+
+    if ($usePoin == 1) {
+        $grandTotal = 0;
+    }
+
+
+
+        
     
         $name = $request->name;
         $email = $request->email;
@@ -64,9 +80,12 @@ class CheckoutController extends Controller
             'email' => $email,
             'phone' => $phone,
             'post_code' => $postCode,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'alamat_lengkap' => $request->alamat_lengkap,
             'notes' => $notes,
-            'payment_type' => $request->payment_type,
-            'amount' => $total_amount,
+            'payment_type' => 'BRI',
+            'amount' => $grandTotal,
             'transaction_id' => date('d-m-Y') . '-' . mt_rand(1000, 9999),
             'invoice_no' => 'MS' . mt_rand(10000000, 99999999),
             'confirmed_date' => Carbon::now(),
@@ -99,7 +118,7 @@ class CheckoutController extends Controller
         $params = [
             'transaction_details' => [
                 'order_id' => $order_id,
-                'gross_amount' => max(100, $total_amount), // minimal Rp 100 agar tidak error Midtrans
+                'gross_amount' => max(100, $grandTotal), // minimal Rp 100 agar tidak error Midtrans
             ],
             'customer_details' => [
                 'first_name' => $name,
@@ -113,6 +132,28 @@ class CheckoutController extends Controller
         if (Session::has('coupon')) {
             Session::forget('coupon');
         }
+
+        // 🔹 1. Update voucher kalau dipakai
+if ($request->voucher_id) {
+    DB::table('vouchers')
+        ->where('id', $request->voucher_id)
+        ->update(['status' => 'terpakai']);
+}
+
+// 🔹 2. Kurangi poin user kalau dipakai
+if ($request->use_poin && Auth::check()) {
+    $userId = Auth::id();
+
+    // misal aturan: kalau total_poin >= 100, order gratis (grand total = 0), maka potong 100 poin
+    $poinUser = DB::table('poin_user')->where('user_id', $userId)->value('total_poin') ?? 0;
+
+    if ($poinUser >= 100) {
+        DB::table('poin_user')
+            ->where('user_id', $userId)
+            ->update(['total_poin' => $poinUser - 100]);
+    }
+}
+
     
         Cart::destroy();
     
@@ -129,7 +170,9 @@ class CheckoutController extends Controller
             'notes',
             'total_amount',
             'snapToken',
-            'order_id'
+            'order_id',
+            'grandTotal',
+            
         ));
     }
     

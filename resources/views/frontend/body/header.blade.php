@@ -6,15 +6,15 @@
       <div class="header-top-inner">
         <div class="cnt-account">
           <ul class="list-unstyled">
-            <li><a href="#"><i class="icon fa fa-user"></i>
+            <li><a href="{{ route('user.profile.edit') }}"><i class="icon fa fa-user"></i>
             @if(session()->get('language') == 'ind') Akun @else My Account @endif
             </a></li>
-            <li><a href="{{ route('wishlist') }}"><i class="icon fa fa-heart"></i>Wishlist</a></li>
+          <!--  <li><a href="{{ route('wishlist') }}"><i class="icon fa fa-heart"></i>Wishlist</a></li> -->
             <li><a href="{{ route('mycart') }}"><i class="icon fa fa-shopping-cart"></i>My Cart</a></li>
             <li><a href="{{ route('checkout') }}"><i class="icon fa fa-check"></i>Checkout</a></li>
 
             @auth
-            <li><a href="{{ route('dashboard') }}"><i class="icon fa fa-user"></i>User Profile</a></li>
+          <!--  <li><a href="{{ route('dashboard') }}"><i class="icon fa fa-user"></i>User Profile</a></li> -->
             @else
             <li><a href="{{ route('login') }}"><i class="icon fa fa-lock"></i>Login/Register</a></li>
             @endauth
@@ -27,12 +27,12 @@
         
         <div class="cnt-block">
           <ul class="list-unstyled list-inline">
-            <li class="dropdown dropdown-small"> <a href="#" class="dropdown-toggle" data-hover="dropdown" data-toggle="dropdown"><span class="value">INR </span><b class="caret"></b></a>
+          <!--  <li class="dropdown dropdown-small"> <a href="#" class="dropdown-toggle" data-hover="dropdown" data-toggle="dropdown"><span class="value">INR </span><b class="caret"></b></a>
               <ul class="dropdown-menu">
                 <li><a href="#">INR</a></li>
                 <li><a href="#">USD</a></li>
               </ul>
-            </li>
+            </li> -->
             <li class="dropdown dropdown-small"> <a href="#" class="dropdown-toggle" data-hover="dropdown" data-toggle="dropdown"><span class="value">
             @if(session()->get('language') == 'ind') Bahasa @else Language @endif </span><b class="caret"></b></a>
               <ul class="dropdown-menu">
@@ -71,17 +71,7 @@
           <div class="search-area">
             <form>
               <div class="control-group">
-                <ul class="categories-filter animate-dropdown">
-                  <li class="dropdown"> <a class="dropdown-toggle"  data-toggle="dropdown" href="category.html">Categories <b class="caret"></b></a>
-                    <ul class="dropdown-menu" role="menu" >
-                      <li class="menu-header">Recycling</li>
-                      <li role="presentation"><a role="menuitem" tabindex="-1" href="category.html">-  Enviromently</a></li>
-                      <li role="presentation"><a role="menuitem" tabindex="-1" href="category.html">- Home & Garden</a></li>
-                      <li role="presentation"><a role="menuitem" tabindex="-1" href="category.html">- Health</a></li>
-                      <li role="presentation"><a role="menuitem" tabindex="-1" href="category.html">- Farming</a></li>
-                    </ul>
-                  </li>
-                </ul>
+
                 <input class="search-field" placeholder="Search here..." />
                 <a class="search-button" href="#" ></a> </div>
             </form>
@@ -112,7 +102,7 @@
                 <div class="clearfix cart-total">
                   <div class="pull-right"> <span class="text">Sub Total :</span><span class='price' id="cartSubTotal"></span> </div>
                   <div class="clearfix"></div>
-                  <a href="checkout.html" class="btn btn-upper btn-primary btn-block m-t-20">Checkout</a> </div>
+                  <a href="{{ route('checkout') }}" class="btn btn-upper btn-primary btn-block m-t-20">Checkout</a> </div>
                 <!-- /.cart-total--> 
                 
               </li>
@@ -144,7 +134,7 @@
           <div class="navbar-collapse collapse" id="mc-horizontal-menu-collapse">
             <div class="nav-outer">
               <ul class="nav navbar-nav">
-                <li class="active"> <a href="{{ url('/') }}">
+                <li class="active"> <a href="{{ url('/dashboard') }}">
                   @if(session()->get('language') == 'ind') Beranda @else Home @endif </a> </li>
 
 
@@ -195,7 +185,7 @@
 
 
                 
-                <li class="dropdown  navbar-right special-menu"> <a href="#">Promo Hari Ini</a> </li>
+               <!-- <li class="dropdown  navbar-right special-menu"> <a href="#">Promo Hari Ini</a> </li> -->
               </ul>
               <!-- /.navbar-nav -->
               <div class="clearfix"></div>

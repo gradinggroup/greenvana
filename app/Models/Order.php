@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     use HasFactory;
-    protected $guarded = [];
+    protected $guarded = [
+        'longitude', 
+        'latitude',
+        'alamat_lengkap',
+    ];
 
     public function province()
     {
@@ -29,5 +33,11 @@ class Order extends Model
     {
         return $this->belongsTo(Village::class, 'village_id','id');
     }
+
+    public function order_items()
+{
+    return $this->hasMany(OrderItem::class, 'order_id', 'id');
+}
+
     
 }

@@ -20,7 +20,8 @@ use App\Http\Controllers\Backend\UsersController;
 use App\Http\Controllers\Frontend\IndexController;
 use App\Http\Controllers\Frontend\LanguageController;
 use App\Http\Controllers\Frontend\CartController;
-
+use App\Http\Controllers\GameRewardController;
+use App\Http\Controllers\StoreAddressController;
 use App\Http\Controllers\User\WishlistController;
 use App\Http\Controllers\User\CartPageController;
 use App\Http\Controllers\User\CheckoutController;
@@ -43,7 +44,7 @@ use App\Models\User;
 // });
 
 Route::group(['prefix'=> 'admin', 'middleware'=>['admin:admin']], function(){
-	Route::get('/login', [AdminController::class, 'loginForm']);
+	Route::get('/login', [AdminController::class, 'loginForm'])->name('fe.admin.login');
 	Route::post('/login',[AdminController::class, 'store'])->name('admin.login');
 });
 
@@ -54,7 +55,7 @@ Route::middleware(['auth:admin'])->group(function(){
 
     Route::middleware(['auth:sanctum,admin', 'verified'])->get('/admin/dashboard', function () {
         return view('admin.index');
-    })->name('dashboard');
+    })->name('admin.dashboard');
 
     Route::get('/admin/logout', [AdminController::class, 'destroy'])->name('admin.logout');
 
@@ -355,6 +356,7 @@ Route::post('/checkout-store', [CheckoutController::class, 'checkoutStore'])->na
 //end checkout routes
 
 
+
 //route api
 
 // routes/web.php
@@ -363,3 +365,24 @@ Route::get('/api/kota/{provinsi}', [WilayahController::class, 'getKota']);
 Route::get('/api/kecamatan/{kota}', [WilayahController::class, 'getKecamatan']);
 Route::get('/api/desa/{kecamatan}', [WilayahController::class, 'getDesa']);
 
+Route::get('/game/{order_id}', [App\Http\Controllers\GameController::class, 'index'])->name('game.page');
+Route::post('/game/upload', [App\Http\Controllers\GameController::class, 'upload'])->name('game.upload');
+
+
+// Simpan reward setelah main game
+Route::post('/game/reward', [GameRewardController::class, 'simpanReward'])->name('game.reward');
+
+// List voucher user
+Route::get('/user/vouchers', [GameRewardController::class, 'listVoucher'])->name('user.vouchers');
+
+// Poin user + history
+Route::get('/user/poin', [GameRewardController::class, 'poinSaya'])->name('user.poin');
+
+
+Route::middleware(['auth:admin'])->group(function () {
+    Route::get('/store-address', [StoreAddressController::class, 'index'])->name('store-address.index');
+    Route::get('/store-address/create', [StoreAddressController::class, 'create'])->name('store-address.create');
+    Route::post('/store-address/store', [StoreAddressController::class, 'store'])->name('store-address.store');
+    Route::put('/store-address/{id}', [StoreAddressController::class, 'update'])->name('store-address.update');
+    Route::delete('/store-address/{id}', [StoreAddressController::class, 'destroy'])->name('store-address.destroy');
+});
