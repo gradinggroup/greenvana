@@ -14,6 +14,7 @@ class PoinHistory extends Model
         'jumlah',
         'jenis',
         'keterangan',
+        'expired_at' => 'datetime',
     ];
 
     public function user()

@@ -21,6 +21,8 @@ use App\Http\Controllers\Frontend\IndexController;
 use App\Http\Controllers\Frontend\LanguageController;
 use App\Http\Controllers\Frontend\CartController;
 use App\Http\Controllers\GameRewardController;
+use App\Http\Controllers\ProductReviewController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StoreAddressController;
 use App\Http\Controllers\User\WishlistController;
 use App\Http\Controllers\User\CartPageController;
@@ -285,7 +287,8 @@ Route::get('/language/ind', [LanguageController::class, 'ind'])->name('language.
 
 Route::get('/language/en', [LanguageController::class, 'en'])->name('language.en');
 
-Route::get('/detail/{id}/{slug}', [IndexController::class, 'detail']);
+Route::get('/detail/{id}/{slug}', [IndexController::class, 'detail'])->name('product.details');
+
 
 //frontend route tags
 Route::get('/product/tag/{tag}', [IndexController::class, 'tagProduct']);
@@ -365,7 +368,7 @@ Route::get('/api/kota/{provinsi}', [WilayahController::class, 'getKota']);
 Route::get('/api/kecamatan/{kota}', [WilayahController::class, 'getKecamatan']);
 Route::get('/api/desa/{kecamatan}', [WilayahController::class, 'getDesa']);
 
-Route::get('/game/{order_id}', [App\Http\Controllers\GameController::class, 'index'])->name('game.page');
+Route::get('/game', [App\Http\Controllers\GameController::class, 'index'])->name('game.page');
 Route::post('/game/upload', [App\Http\Controllers\GameController::class, 'upload'])->name('game.upload');
 
 
@@ -386,3 +389,9 @@ Route::middleware(['auth:admin'])->group(function () {
     Route::put('/store-address/{id}', [StoreAddressController::class, 'update'])->name('store-address.update');
     Route::delete('/store-address/{id}', [StoreAddressController::class, 'destroy'])->name('store-address.destroy');
 });
+
+Route::get('/search', [SearchController::class, 'search'])->name('product.search');
+Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('product.suggest');
+
+Route::post('/products/{product}/reviews', [ProductReviewController::class, 'store'])
+    ->name('products.reviews.store');

@@ -1,0 +1,17 @@
+{
+    "background.enabled": true,
+"background.useFront": false,
+"background.customImages": [
+    "F:/nezuko.jpeg"
+],
+"background.style": {
+    "content": "''",
+    "pointer-events": "none",
+    "position": "center",
+    "size": "cover",
+    "opacity": 1
+
+    
+}
+
+}

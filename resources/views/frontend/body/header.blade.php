@@ -68,14 +68,28 @@
         <div class="col-xs-12 col-sm-12 col-md-7 top-search-holder"> 
           <!-- /.contact-row --> 
           <!-- ============================================================= SEARCH AREA ============================================================= -->
-          <div class="search-area">
-            <form>
-              <div class="control-group">
+<div class="search-area">
+  <form action="{{ route('product.search') }}" method="GET" id="searchForm" autocomplete="off">
+    <div class="control-group" style="position:relative">
+      <input
+        class="search-field"
+        name="q"
+        id="searchInput"
+        value="{{ request('q') }}"
+        placeholder="@if(session()->get('language') == 'ind') Cari produk... @else Search products... @endif"
+        required
+      />
+      <button class="search-button" type="submit"></button>
 
-                <input class="search-field" placeholder="Search here..." />
-                <a class="search-button" href="#" ></a> </div>
-            </form>
-          </div>
+      {{-- dropdown suggestion --}}
+      <div id="searchSuggest"
+           class="dropdown-menu"
+           style="display:none; position:absolute; top:100%; left:0; right:0; max-height:260px; overflow:auto;">
+      </div>
+    </div>
+  </form>
+</div>
+
           <!-- /.search-area --> 
           <!-- ============================================================= SEARCH AREA : END ============================================================= --> </div>
         <!-- /.top-search-holder -->

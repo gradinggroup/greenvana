@@ -44,19 +44,11 @@ class CheckoutController extends Controller
 
 
             $ongkir = $request->ongkir_hidden ?? 0;
-    $diskon = $request->diskon_hidden ?? 0;
-    $usePoin = $request->use_poin ?? 0;
+        $diskon = $request->diskon_hidden ?? 0;
+        $usePoin = $request->use_poin ?? 0;
 
-    $grandTotal = $request->grand_total;
+        $grandTotal = $request->grand_total;
 
-    if ($usePoin == 1) {
-        $grandTotal = 0;
-    }
-
-
-
-        
-    
         $name = $request->name;
         $email = $request->email;
         $phone = $request->phone;
@@ -140,19 +132,75 @@ if ($request->voucher_id) {
         ->update(['status' => 'terpakai']);
 }
 
-// 🔹 2. Kurangi poin user kalau dipakai
-if ($request->use_poin && Auth::check()) {
+// 🔹 2. Set poin user jadi 0 kalau dipakai
+if ($request->boolean('use_poin') && Auth::check()) {
     $userId = Auth::id();
 
-    // misal aturan: kalau total_poin >= 100, order gratis (grand total = 0), maka potong 100 poin
-    $poinUser = DB::table('poin_user')->where('user_id', $userId)->value('total_poin') ?? 0;
-
-    if ($poinUser >= 100) {
-        DB::table('poin_user')
+    // kalau belum ada barisnya, buat dengan 0; kalau sudah ada, set ke 0
+    if (DB::table('poin_users')->where('user_id', $userId)->exists()) {
+        DB::table('poin_users')
             ->where('user_id', $userId)
-            ->update(['total_poin' => $poinUser - 100]);
+            ->update(['total_poin' => 0, 'updated_at' => now()]);
+    } else {
+        DB::table('poin_users')->insert([
+            'user_id'     => $userId,
+            'total_poin'  => 0,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
     }
 }
+
+
+// 🔹 3) BONUS POIN BERLIPAT (cek data di game_uploads, tiap 100k = +20 poin)
+try {
+    $userId = Auth::id();
+
+    // cek: user sudah punya data di game_uploads?
+    $punyaDataGame = DB::table('game_uploads')
+        ->where('user_id', $userId)
+        ->exists();
+
+    // konfigurasi kelipatan
+    $unitAmount    = 100000; // setiap 100 ribu
+    $pointsPerUnit = 20;     // dapat 20 poin
+
+    // hitung kelipatan dari grand total (yang kamu kirim dari form)
+    $kelipatan = intdiv(max(0, (int) $grandTotal), $unitAmount); // 0 jika < 100k
+    $bonusPoin = $kelipatan * $pointsPerUnit;
+
+    if ($punyaDataGame && $bonusPoin > 0) {
+        DB::beginTransaction();
+
+        // catat ke poin_histories
+        DB::table('poin_histories')->insert([
+            'user_id'    => $userId,
+            'jumlah'     => $bonusPoin,
+            'jenis'      => 'penambahan',
+            'keterangan' => 'Bonus belanja kelipatan Rp100.000 ('.$kelipatan.'x) - Order ID: '.$order_id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // tambah ke poin_users.total_poin
+        $wallet = \App\Models\PoinUser::firstOrCreate(
+            ['user_id' => $userId],
+            ['total_poin' => 0]
+        );
+        $wallet->increment('total_poin', $bonusPoin);
+
+        DB::commit();
+    }
+} catch (\Throwable $e) {
+    DB::rollBack();
+    Log::error('Gagal memberikan poin bonus (game_uploads): '.$e->getMessage(), [
+        'user_id'     => $userId ?? null,
+        'order_id'    => $order_id ?? null,
+        'grand_total' => $grandTotal ?? null,
+    ]);
+}
+
+
 
     
         Cart::destroy();
@@ -197,11 +245,21 @@ if ($request->use_poin && Auth::check()) {
     }
 
 
-    public function myOrders()
-    {
-        $orders = Order::where('user_id', Auth::id())->orderBy('id','DESC')->get();
-        return view('frontend.user.order.view_order', compact('orders'));
-    }
+public function myOrders()
+{
+    // Ambil semua orders user login
+    $orders = Order::where('user_id', Auth::id())
+        ->orderBy('id','DESC')
+        ->get();
+
+    // Cek apakah user punya minimal 1 order >= 20.000
+    $canPlayGame = Order::where('user_id', Auth::id())
+        ->where('amount', '>=', 20000)
+        ->where('status', 'Success') // hanya kalau order sukses
+        ->exists();
+
+    return view('frontend.user.order.view_order', compact('orders', 'canPlayGame'));
+}
 
     public function orderDetil($id)
     {

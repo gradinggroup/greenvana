@@ -13,13 +13,9 @@ class GameController extends Controller
 {
 
 
-public function index($order_id)
+public function index()
 {
-    $product = Order::findOrFail($order_id);
 
-    $alreadyUploaded = GameUpload::where('order_id', $product->id)
-        ->where('user_id', Auth::id())
-        ->exists();
 
     $user = Auth::user();
     if (!$user) {
@@ -36,41 +32,56 @@ public function index($order_id)
         return redirect()->back()->with('error', 'Anda sudah bermain maksimal 3 kali sehari');
     }
 
-    return view('frontend.game', compact('product', 'alreadyUploaded'));
+    return view('frontend.game');
 }
 
 
 
-public function upload(Request $request)
-{
-    $request->validate([
-        'order_id' => 'required',
-        'user_id' => 'required',
-    ]);
+    public function upload(Request $request)
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda harus login.'
+            ], 401);
+        }
 
-    // Cek apakah produk ini sudah di-upload
-    $exists = GameUpload::where('order_id', $request->order_id)
-        ->where('user_id', $request->user_id)
-        ->first();
+        $limit = 3;
+        $today = now()->timezone(config('app.timezone'))->toDateString();
 
-    if ($exists) {
+        // hitung jumlah upload hari ini
+        $countToday = GameUpload::where('user_id', $userId)
+            ->whereDate('created_at', $today)
+            ->count();
+
+        if ($countToday >= $limit) {
+            return response()->json([
+                'success'   => false,
+                'message'   => "Batas main hari ini tercapai ($limit/$limit). Coba lagi besok.",
+                'limit'     => $limit,
+                'used'      => $countToday,
+                'remaining' => 0,
+            ], 429);
+        }
+
+        // simpan entry baru (tanpa order_id)
+        $upload = GameUpload::create([
+            'user_id' => $userId,
+            // tambahkan field lain jika ada, misal skor, hadiah, dsb
+        ]);
+
+        $remaining = $limit - ($countToday + 1);
+
         return response()->json([
-            'success' => false,
-            'message' => 'Produk ini sudah di-upload sebelumnya.'
-        ], 409); // 409 Conflict
+            'success'   => true,
+            'message'   => "Data tersimpan. Sisa kesempatan hari ini: {$remaining}.",
+            'limit'     => $limit,
+            'used'      => $countToday + 1,
+            'remaining' => $remaining,
+            'data'      => $upload,
+        ]);
     }
-
-    $upload = GameUpload::create([
-        'order_id' => $request->order_id,
-        'user_id' => $request->user_id,
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Foto berhasil di-upload!',
-        'data' => $upload
-    ]);
-}
 
 
 

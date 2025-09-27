@@ -13,11 +13,25 @@
             <div class="col-md-2">
                 @include('frontend.common.user_sidebar')
             </div>
-            <div class="col-md-2">
-                
-            </div>
+            <div class="col-md-2"></div>
+
             <div class="col-md-10 mt-3">
-                <br>
+                {{-- Tombol Game tunggal --}}
+                <div class="d-flex justify-content-end mb-3">
+                    @if($canPlayGame)
+                        <a href="{{ route('game.page') }}" class="btn btn-success">
+                            🎮 Main Game
+                        </a>
+                    @else
+                        <button class="btn btn-secondary" disabled>
+                            🎮 Main Game
+                        </button>
+                        <small class="text-muted ms-2">
+                            Butuh minimal 1 order ≥ Rp 20.000
+                        </small>
+                    @endif
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-bordered">
                         <thead>
@@ -31,44 +45,36 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($orders as $order)
+                        @foreach($orders as $order)
                             <tr>
                                 <td>{{ $order->order_date }}</td>
-                                <td>Rp. {{ $order->amount }}</td>
+                                <td>Rp. {{ number_format($order->amount,0,',','.') }}</td>
                                 <td>{{ $order->payment_type }}</td>
                                 <td>{{ $order->invoice_no }}</td>
                                 <td>
                                     @if($order->status == 'Pending')
-                                    <span class="badge badge-pill badge-danger">Pending</span>
+                                        <span class="badge badge-pill badge-danger">Pending</span>
                                     @else
-                                    <span class="badge badge-pill badge-success">Success</span>
+                                        <span class="badge badge-pill badge-success">Success</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('order.detil',$order->id) }}" class="btn btn-sm btn-primary"><i class="fa fa-eye"></i> View</a>
-                                    <a href="{{ route('invoice',$order->id) }}" class="btn btn-sm btn-danger" target="_blank"><i class="fa fa-download"></i> Invoice</a>
-    @if($order->amount >= 20000)
-        <a href="{{ route('game.page', ['order_id' => $order->id]) }}" class="btn btn-success mt-2">
-            🎮 Game
-        </a>
-    @endif
-
-
-
-
+                                    <a href="{{ route('order.detil',$order->id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fa fa-eye"></i> View
+                                    </a>
+                                    <a href="{{ route('invoice',$order->id) }}" class="btn btn-sm btn-danger" target="_blank">
+                                        <i class="fa fa-download"></i> Invoice
+                                    </a>
+                                    {{-- HAPUS tombol game per-baris --}}
                                 </td>
                             </tr>
-                            @endforeach
-                        </tbody>  
+                        @endforeach
+                        </tbody>
                     </table>
-                </div>          
-
+                </div>
 
             </div>
         </div>
     </div>
 </div>
-
-
-
 @endsection

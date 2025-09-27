@@ -3,13 +3,15 @@
 @section('content')
 @php
 $alreadyUploaded = false;
+
 if (Auth::check()) {
-    // Cek apakah user sudah upload untuk order_id yang dikirim dari route
-    $alreadyUploaded = \App\Models\GameUpload::where('order_id', $product->id)
-        ->where('user_id', Auth::id())
+    // Cek apakah user sudah punya minimal 1 data di tabel game_uploads
+    $alreadyUploaded = \App\Models\GameUpload::where('user_id', Auth::id())
         ->exists();
 }
 @endphp
+
+
 
 {{-- Ensure CSRF token is available --}}
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -481,34 +483,38 @@ header p {
 
     <!-- Game Controls -->
     <div id="menu">
-        @if($alreadyUploaded)
-            <button onclick="startGrowth(true)">
-                Lihat Animasi
-            </button>
-        @endif
         <label>
             <input type="checkbox" id="leaves" checked />
             <span>Dengan Daun</span>
         </label>
-        
+
+      @auth
+        <button type="button" onclick="playAgainAndSave()">
+          Main Lagi
+        </button>
+      @endauth        
     </div>
 
-    <!-- Upload Form -->
-    @if(Auth::check())
-        <form id="uploadForm" action="{{ route('game.upload') }}" method="POST">
-            @csrf
-            <input type="hidden" name="order_id" value="{{ $product->id }}">
-            <input type="hidden" name="user_id" value="{{ Auth::id() }}">
-            
-            <button type="button" onclick="saveAndStartGame()" id="btnSave" class="btn-submit" {{ $alreadyUploaded ? 'disabled' : '' }}>
-                {{ $alreadyUploaded ? 'Sudah Upload' : 'Simpan Hasil Main' }}
-            </button>
-        </form>
-    @else
-        <button type="button" class="btn-submit" disabled>
-            Masuk untuk Bermain
+@if(Auth::check())
+    <form id="uploadForm" action="{{ route('game.upload') }}" method="POST">
+        @csrf
+
+        <input type="hidden" name="user_id" value="{{ Auth::id() }}">
+        <input type="hidden" name="replay" value="0"> {{-- default bukan replay --}}
+
+        {{-- Tombol ini boleh disembunyikan kalau mau; tapi kalau ditampilkan,
+             jangan di-disable saat sudah pernah upload, karena sekarang replay juga upload --}}
+        <button type="button" onclick="saveAndStartGame()" id="btnSave" class="btn-submit">
+            Simpan Hasil Main
         </button>
-    @endif
+    </form>
+    
+@else
+    <button type="button" class="btn-submit" disabled>
+        Masuk untuk Bermain
+    </button>
+@endif
+
         <!-- Reward Modal -->
     <div id="rewardModal" style="display:none; position:fixed; top:0; left:0; 
         width:100%; height:100%; background:rgba(0,0,0,0.5); 
@@ -522,6 +528,11 @@ header p {
             </button>
         </div>
     </div>
+
+
+
+
+
 </div>
 
 {{-- Tambahin di atas sebelum penutup </body> --}}
@@ -542,23 +553,23 @@ document.addEventListener("DOMContentLoaded", function(){
                     "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
                 },
                 body: JSON.stringify({
-                    order_id: "{{ $product->id }}"
+                    
                 })
             })
             .then(res => res.json())
-.then(data => {
-    if (data.success) {
-        Swal.fire({
-            title: "🎉 Selamat!",
-            html: `Anda mendapatkan <b>${data.poin_didapat} poin</b> 
-                   dan <b>voucher Rp ${new Intl.NumberFormat('id-ID').format(data.voucher_nominal)}</b>`,
-            icon: "success",
-            confirmButtonText: "OK"
-        });
-    } else {
-        Swal.fire("Gagal!", data.message, "error");
-    }
-})
+              .then(data => {
+                  if (data.success) {
+                      Swal.fire({
+                          title: "🎉 Selamat!",
+                          html: `Anda mendapatkan <b>${data.poin_didapat} poin</b> 
+                                dan <b>voucher Rp ${new Intl.NumberFormat('id-ID').format(data.voucher_nominal)}</b>`,
+                          icon: "success",
+                          confirmButtonText: "OK"
+                      });
+                  } else {
+                      Swal.fire("Gagal!", data.message, "error");
+                  }
+              })
 
             .catch(err => {
                 console.error(err);
@@ -571,15 +582,94 @@ document.addEventListener("DOMContentLoaded", function(){
 });
 </script>
 
+<script>
+function playAgainAndSave() {
+  console.log('Main Lagi + Save');
+
+  // Animasi mulai dari biji
+  setupSeedState();
+  setTimeout(() => animateGrowth(), 100);
+
+  // Upload replay
+  const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  const form = document.getElementById('uploadForm');
+  const uploadUrl = form ? form.action : "{{ route('game.upload') }}";
+
+  const data = new FormData();
+  data.append('_token', token);
+  data.append('replay', '1');
+
+  fetch(uploadUrl, {
+    method: 'POST',
+    body: data,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-TOKEN': token
+    }
+  })
+  .then(res => res.json())
+  .then(json => {
+    console.log('Replay upload response:', json);
+
+    if (!json.success) {
+      // Limit upload harian / error lain
+      if (window.Swal) Swal.fire("Gagal", json.message || "Gagal menyimpan replay.", "warning");
+      else alert(json.message || "Gagal menyimpan replay.");
+      return;
+    }
+
+    // Upload sukses → minta reward
+    return fetch("{{ route('game.reward') }}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": token
+      },
+      body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(reward => {
+      console.log('Reward response:', reward);
+      if (reward.success) {
+        window.alreadyUploaded = true;
+        if (window.Swal) {
+          Swal.fire({
+            title: "🎉 Selamat!",
+            html: `Anda mendapatkan <b>${reward.poin_didapat} poin</b> 
+                   dan <b>voucher Rp ${new Intl.NumberFormat('id-ID').format(reward.voucher_nominal)}</b>
+                   `,
+            icon: "success",
+            confirmButtonText: "OK"
+          });
+        } else {
+          alert(`Poin: ${reward.poin_didapat}, Voucher: Rp ${reward.voucher_nominal}`);
+        }
+      } else {
+        // Limit reward harian / error
+        if (window.Swal) Swal.fire("Limit Harian", reward.message || "Batas reward tercapai.", "info");
+        else alert(reward.message || "Batas reward tercapai.");
+      }
+    });
+  })
+  .catch(err => {
+    console.error(err);
+    if (window.Swal) Swal.fire("Error", "Terjadi kesalahan saat menyimpan replay / mengambil reward.", "error");
+    else alert("Terjadi kesalahan saat menyimpan replay / mengambil reward.");
+  });
+}
+</script>
+
+
 
 {{-- JS Initialization --}}
 <script>
     window.alreadyUploaded = @json($alreadyUploaded);
+
     document.addEventListener("DOMContentLoaded", () => {
         init(window.alreadyUploaded);
     });
-  
 </script>
+
 <script>
 /* ===========================
    TREE GROWTH ANIMATION FIX

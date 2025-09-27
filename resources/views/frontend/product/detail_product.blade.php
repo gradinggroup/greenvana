@@ -41,33 +41,58 @@
 </div><!-- /.sidebar-widget -->
 <!-- ============================================== NEWSLETTER: END ============================================== -->
 
-<!-- ============================================== Testimonials============================================== -->
-<div class="sidebar-widget  wow fadeInUp outer-top-vs ">
-	<div id="advertisement" class="advertisement">
-        <div class="item">
-            <div class="avatar"><img src="{{ asset('frontend/assets/images/testimonials/2.png') }}" alt="Image"></div>
-		<div class="testimonials"><em>"</em> Marketplace ini sangat membantu saya mencari barang dari daur ulang.<em>"</em></div>
-		<div class="clients_author">Fadlhurahman<span>RahmanFtX</span>	</div><!-- /.container-fluid -->
-        </div><!-- /.item -->
+<!-- ============================================== Testimonials (Product Reviews) ============================================== -->
+@php
+    // Ambil 10 review terbaru utk produk ini
+    $sidebarReviews = $product->reviews()->latest()->take(10)->get();
+@endphp
 
-         <div class="item">
-         	<div class="avatar"><img src="{{ asset('frontend/assets/images/testimonials/3.JPG') }}" alt="Image"></div>
-		<div class="testimonials"><em>"</em>Webnya interaktif dan mudah digunakan oleh semua kalangan<em>"</em></div>
-		<div class="clients_author">Juan Daniel	<span>UNIB</span>	</div>    
-        </div><!-- /.item -->
+<div class="sidebar-widget wow fadeInUp outer-top-vs">
+    <h3 class="section-title">Customer Reviews</h3>
 
-        <div class="item">
-            <div class="avatar"><img src="{{ asset('frontend/assets/images/testimonials/1.jpg') }}" alt="Image"></div>
-		<div class="testimonials"><em>"</em> Produknya lengkap, mulai dari tas bahan karung hingga bibit tanaman. <em>"</em></div>
-		<div class="clients_author">Hafiz Alfarrel <span>Advantage &amp; Corp</span>	</div><!-- /.container-fluid -->
-        </div><!-- /.item -->
+    <div id="advertisement" class="advertisement">
+        @forelse ($sidebarReviews as $rv)
+            <div class="item">
+                <div class="avatar">
+                    {{-- pakai foto user jika ada, fallback ke avatar default --}}
+                    <img src="{{ optional($rv->user)->profile_photo_url ?? asset('frontend/assets/images/testimonials/default.png') }}" alt="Avatar">
+                </div>
 
-    </div><!-- /.owl-carousel -->
+                <div class="testimonials">
+                    {{-- ringkas review agar rapi di sidebar --}}
+                    <em>"</em> {{ \Illuminate\Support\Str::limit($rv->review, 140) }} <em>"</em>
+                </div>
+
+                <div class="clients_author">
+                    {{ $rv->name }}
+                    <span>{{ $rv->created_at->diffForHumans() }}</span>
+                </div>
+
+<div class="rv-stars m-t-10 ">
+  @php $stars = (int) round($rv->rating_overall); @endphp
+  @for($i=1;$i<=5;$i++)
+    <i class="fa {{ $i <= $stars ? 'fa-star' : 'fa-star-o' }}"></i>
+  @endfor
+  <small class="text-muted">({{ number_format($rv->rating_overall,1) }})</small>
 </div>
-    
+
+
+            </div><!-- /.item -->
+        @empty
+
+
+
+
+		
+
+
+
+
+        @endforelse
+    </div><!-- /#advertisement.advertisement -->
+</div>
 <!-- ============================================== Testimonials: END ============================================== -->
 
- 
 
 
 
@@ -121,18 +146,35 @@
 						<div class="product-info">
 							<h1 class="name" id="pname">@if(session()->get('language') == 'ind') {{ $product->product_name_ind }} @else {{ $product->product_name_en }} @endif</h1>
 							
-							<div class="rating-reviews m-t-20">
-								<div class="row">
-									<div class="col-sm-3">
-										<div class="rating rateit-small"></div>
-									</div>
-									<div class="col-sm-8">
-										<div class="reviews">
-											<a href="#" class="lnk">(13 Reviews)</a>
-										</div>
-									</div>
-								</div><!-- /.row -->		
-							</div><!-- /.rating-reviews -->
+@php
+    // ambil semua review produk
+    $reviews = $product->reviews;
+    $reviewCount = $reviews->count();
+    $averageRating = $reviewCount > 0
+        ? round($reviews->avg('rating_overall'), 1)
+        : 0;
+@endphp
+
+<div class="rating-reviews m-t-20">
+    <div class="row">
+        <div class="col-sm-3">
+            {{-- tampilkan bintang rata-rata --}}
+            <div class="rv-stars">
+                @for ($i = 1; $i <= 5; $i++)
+                    <i class="fa {{ $i <= round($averageRating) ? 'fa-star' : 'fa-star-o' }}"></i>
+                @endfor
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="reviews">
+                <a href="#review" class="lnk">
+                    ({{ $reviewCount }} Reviews • {{ $averageRating }}/5)
+                </a>
+            </div>
+        </div>
+    </div><!-- /.row -->
+</div><!-- /.rating-reviews -->
+
 
 							<div class="stock-container info-container m-t-10">
 								<div class="row">
@@ -276,7 +318,7 @@
 							<ul id="product-tabs" class="nav nav-tabs nav-tab-cell">
 								<li class="active"><a data-toggle="tab" href="#description">DESCRIPTION</a></li>
 								<li><a data-toggle="tab" href="#review">REVIEW</a></li>
-								<li><a data-toggle="tab" href="#tags">TAGS</a></li>
+
 							</ul><!-- /.nav-tabs #product-tabs -->
 						</div>
 						<div class="col-sm-9">
@@ -308,80 +350,82 @@
 										
 
 										
-										<div class="product-add-review">
-											<h4 class="title">Tuli Review Anda</h4>
-											<div class="review-table">
-												<div class="table-responsive">
-													<table class="table">	
-														<thead>
-															<tr>
-																<th class="cell-label">&nbsp;</th>
-																<th>Bintang 1</th>
-																<th>Bintang 2</th>
-																<th>Bintang 3</th>
-																<th>Bintang 4</th>
-																<th>Bintang 5</th>
-															</tr>
-														</thead>	
-														<tbody>
-															<tr>
-																<td class="cell-label">Kualitas</td>
-																<td><input type="radio" name="quality" class="radio" value="1"></td>
-																<td><input type="radio" name="quality" class="radio" value="2"></td>
-																<td><input type="radio" name="quality" class="radio" value="3"></td>
-																<td><input type="radio" name="quality" class="radio" value="4"></td>
-																<td><input type="radio" name="quality" class="radio" value="5"></td>
-															</tr>
-															<tr>
-																<td class="cell-label">Harga</td>
-																<td><input type="radio" name="quality" class="radio" value="1"></td>
-																<td><input type="radio" name="quality" class="radio" value="2"></td>
-																<td><input type="radio" name="quality" class="radio" value="3"></td>
-																<td><input type="radio" name="quality" class="radio" value="4"></td>
-																<td><input type="radio" name="quality" class="radio" value="5"></td>
-															</tr>
-															<tr>
-																<td class="cell-label">Nilai</td>
-																<td><input type="radio" name="quality" class="radio" value="1"></td>
-																<td><input type="radio" name="quality" class="radio" value="2"></td>
-																<td><input type="radio" name="quality" class="radio" value="3"></td>
-																<td><input type="radio" name="quality" class="radio" value="4"></td>
-																<td><input type="radio" name="quality" class="radio" value="5"></td>
-															</tr>
-														</tbody>
-													</table><!-- /.table .table-bordered -->
-												</div><!-- /.table-responsive -->
-											</div><!-- /.review-table -->
+
 											
 											<div class="review-form">
 												<div class="form-container">
-													<form role="form" class="cnt-form">
-														
-														<div class="row">
-															<div class="col-sm-6">
-																<div class="form-group">
-																	<label for="exampleInputName">Name<span class="astk">*</span></label>
-																	<input type="text" class="form-control txt" id="exampleInputName" placeholder="">
-																</div><!-- /.form-group -->
-																<div class="form-group">
-																	<label for="exampleInputSummary">Summary <span class="astk">*</span></label>
-																	<input type="text" class="form-control txt" id="exampleInputSummary" placeholder="">
-																</div><!-- /.form-group -->
-															</div>
+<form role="form" class="cnt-form" method="POST" action="{{ route('products.reviews.store', $product->id) }}">
+    @csrf
 
-															<div class="col-md-6">
-																<div class="form-group">
-																	<label for="exampleInputReview">Review <span class="astk">*</span></label>
-																	<textarea class="form-control txt txt-review" id="exampleInputReview" rows="4" placeholder=""></textarea>
-																</div><!-- /.form-group -->
-															</div>
-														</div><!-- /.row -->
-														
-														<div class="action text-right">
-															<button class="btn btn-primary btn-upper">SUBMIT REVIEW</button>
-														</div><!-- /.action -->
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="form-group">
+                <label for="exampleInputName">Name<span class="astk">*</span></label>
+                <input type="text" class="form-control txt" id="exampleInputName" name="name" value="{{ old('name') }}" required>
+                @error('name')<small class="text-danger">{{ $message }}</small>@enderror
+            </div>
+            <div class="form-group">
+                <label for="exampleInputSummary">Summary <span class="astk">*</span></label>
+                <input type="text" class="form-control txt" id="exampleInputSummary" name="summary" value="{{ old('summary') }}" required>
+                @error('summary')<small class="text-danger">{{ $message }}</small>@enderror
+            </div>
+        </div>
 
-													</form><!-- /.cnt-form -->
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="exampleInputReview">Review <span class="astk">*</span></label>
+                <textarea class="form-control txt txt-review" id="exampleInputReview" name="review" rows="4" required>{{ old('review') }}</textarea>
+                @error('review')<small class="text-danger">{{ $message }}</small>@enderror
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel rating -->
+    <div class="review-table">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th class="cell-label">&nbsp;</th>
+                    <th>Bintang 1</th>
+                    <th>Bintang 2</th>
+                    <th>Bintang 3</th>
+                    <th>Bintang 4</th>
+                    <th>Bintang 5</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td class="cell-label">Kualitas</td>
+                    @for($i=1;$i<=5;$i++)
+                        <td><input type="radio" name="rating_quality" class="radio" value="{{ $i }}" {{ old('rating_quality')==$i?'checked':'' }} required></td>
+                    @endfor
+                </tr>
+                <tr>
+                    <td class="cell-label">Harga</td>
+                    @for($i=1;$i<=5;$i++)
+                        <td><input type="radio" name="rating_price" class="radio" value="{{ $i }}" {{ old('rating_price')==$i?'checked':'' }} required></td>
+                    @endfor
+                </tr>
+                <tr>
+                    <td class="cell-label">Nilai</td>
+                    @for($i=1;$i<=5;$i++)
+                        <td><input type="radio" name="rating_value" class="radio" value="{{ $i }}" {{ old('rating_value')==$i?'checked':'' }} required></td>
+                    @endfor
+                </tr>
+                </tbody>
+            </table>
+            @error('rating_quality')<small class="text-danger d-block">{{ $message }}</small>@enderror
+            @error('rating_price')<small class="text-danger d-block">{{ $message }}</small>@enderror
+            @error('rating_value')<small class="text-danger d-block">{{ $message }}</small>@enderror
+        </div>
+    </div>
+
+    <div class="action text-right">
+        <button class="btn btn-primary btn-upper" type="submit">SUBMIT REVIEW</button>
+    </div>
+</form>
+
 												</div><!-- /.form-container -->
 											</div><!-- /.review-form -->
 
@@ -390,38 +434,19 @@
 							        </div><!-- /.product-tab -->
 								</div><!-- /.tab-pane -->
 
-								<div id="tags" class="tab-pane">
-									<div class="product-tag">
-										
-										<h4 class="title">Product Tags</h4>
-										<form role="form" class="form-inline form-cnt">
-											<div class="form-container">
-									
-												<div class="form-group">
-													<label for="exampleInputTag">Add Your Tags: </label>
-													<input type="email" id="exampleInputTag" class="form-control txt">
-													
-
-												</div>
-
-												<button class="btn btn-upper btn-primary" type="submit">ADD TAGS</button>
-											</div><!-- /.form-container -->
-										</form><!-- /.form-cnt -->
-
-										<form role="form" class="form-inline form-cnt">
-											<div class="form-group">
-												<label>&nbsp;</label>
-												<span class="text col-md-offset-3">Use spaces to separate tags. Use single quotes (') for phrases.</span>
-											</div>
-										</form><!-- /.form-cnt -->
-
-									</div><!-- /.product-tab -->
-								</div><!-- /.tab-pane -->
+	
 
 							</div><!-- /.tab-content -->
 						</div><!-- /.col -->
 					</div><!-- /.row -->
 				</div><!-- /.product-tabs -->
+
+
+
+
+
+</div>
+
 
 				<!-- ====================== UPSELL PRODUCTS ================================= -->
 <section class="section featured-product wow fadeInUp">

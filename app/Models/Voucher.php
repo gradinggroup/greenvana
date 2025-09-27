@@ -13,6 +13,7 @@ class Voucher extends Model
         'user_id',
         'nominal',
         'status',
+        'expired_at' => 'datetime',
     ];
 
     public function user()

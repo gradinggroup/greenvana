@@ -182,16 +182,41 @@
 <p id="voucher_info" class="text-success"></p>
 <input type="hidden" id="diskon_hidden" value="0">
 
-<label>Total Poin Anda :</label>
-<input type="text" id="user_poin" value="{{ $poin_user }}" disabled>
-<input type="hidden" name="use_poin" id="use_poin" value="0">
+<div class="form-group mt-2">
+    <label class="d-block mb-1">Total Poin Anda :</label>
+    <input type="text" id="user_poin" value="{{ $poin_user }}" class="form-control" disabled>
 
+    <div class="form-check mt-2">
+        <input class="form-check-input" type="checkbox" id="use_points_toggle">
+        <label class="form-check-label" for="use_points_toggle">
+            Tukarkan poin untuk potongan
+        </label>
+    </div>
 
+    <p id="poin_info" class="text-primary mt-2"></p>
+
+    
+    <input type="hidden" id="poin_rate" value="{{ $poin_rate ?? 0 }}">
+
+    {{-- kirim ke backend --}}
+    <input type="hidden" name="use_poin"   id="use_poin"   value="0">
+    <input type="hidden" name="poin_used"  id="poin_used"  value="0">
+    <input type="hidden" name="poin_cut"   id="poin_cut"   value="0">
+</div>
+
+<div class="mt-2">
+    <p id="bonus_poin" class="text-success"></p>
+    <small id="bonus_poin_note" class="text-muted d-block">
+        *Bonus poin yang akan anda dapat karena sudah pernah berbelanja dan bermain game disini.
+    </small>
+    <span id="bonus_poin_value">0</span>
+</div>
+<input type="hidden" name="expected_bonus_poin" id="expected_bonus_poin" value="0">
 
         <hr>
         <p><strong>Grand Total: </strong>Rp <span id="grand_total">{{ number_format((float)$total, 0, ',', '.') }}
 </span></p>
-        <input type="hidden" name="grand_total" id="grand_total_hidden" value="{{ $total }}">
+        <input type="" name="grand_total" id="grand_total_hidden" value="{{ $total }}">
         <hr>
 
         <button type="submit" class="btn btn-primary btn-block">Lanjutkan Checkout</button>
@@ -201,12 +226,12 @@
                             </div>
                         </div>
                     </div> 
-                    <!-- checkout-progress-sidebar -->				
+                   			
                 </div>
-            </div><!-- /.row -->
-        </div><!-- /.checkout-box -->
-    </div><!-- /.container -->
-</div><!-- /.body-content -->
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
@@ -495,20 +520,13 @@ function updateOngkir(jarak) {
     const ongkirPerKm = parseFloat($("#ongkir_per_km").val());
     let ongkir = Math.round(jarak * ongkirPerKm);
 
-    // tampilkan ongkir
     $("#ongkir").html(`<strong>Ongkir: </strong>Rp ${formatRupiah(ongkir)}`);
-
-    // ambil subtotal
-    let subtotal = parseFloat($("#subtotal_hidden").val());
-    let grandTotal = subtotal + ongkir;
-
-    // update Grand Total
-    $("#grand_total").text(`Rp ${formatRupiah(grandTotal)}`);
-
-    // simpan ke hidden input
     $("#ongkir_hidden").val(ongkir);
-    $("#grand_total_hidden").val(grandTotal);
+
+    // hitung ulang semua (voucher + poin)
+    hitungGrandTotal();
 }
+
 
 
 $(document).ready(function(){
@@ -531,35 +549,76 @@ $(document).ready(function(){
     hitungGrandTotal();
 });
 
-// 🔹 Fungsi hitung ulang Grand Total
+$(document).ready(function () {
+    // Saat user centang/uncentang "Tukarkan poin"
+    $("#use_points_toggle").on("change", function () {
+        hitungGrandTotal();
+    });
+});
+
 function hitungGrandTotal() {
     let subtotal = parseFloat($("#subtotal_hidden").val()) || 0;
-    let ongkir = parseFloat($("#ongkir_hidden").val()) || 0;
-    let diskon = parseFloat($("#diskon_hidden").val()) || 0;
+    let ongkir   = parseFloat($("#ongkir_hidden").val())   || 0;
+    let diskon   = parseFloat($("#diskon_hidden").val())   || 0; // dari voucher
+
+    // total sebelum poin
+    let beforePoints = subtotal + ongkir - diskon;
+    if (beforePoints < 0) beforePoints = 0;
+
+    // saldo & rate poin
     let userPoin = parseInt($("#user_poin").val()) || 0;
+    let poinRate = 1; // ⬅️ 1 poin = Rp1
 
-    let grandTotal = subtotal + ongkir - diskon;
+    // apakah user ingin menukarkan poin?
+    let usePoints = $("#use_points_toggle").is(":checked");
 
-if (userPoin >= 100) {
-    grandTotal = 0;
-    $("#voucher_info").text("🎉 Selamat! Poin Anda sudah 100, belanja gratis.");
-    $("#use_poin").val(1); // ✅ kasih tanda ke backend kalau poin dipakai
-} else {
-    $("#use_poin").val(0);
-}
+    let poinUsed = 0;
+    let poinCut  = 0;
 
+    if (usePoints && userPoin > 0 && poinRate > 0) {
+        // pakai poin sebanyak yang dibutuhkan (maks saldo)
+        let maxPoinNeeded = Math.floor(beforePoints / poinRate);
+        poinUsed = Math.min(userPoin, Math.max(0, maxPoinNeeded));
+        poinCut  = poinUsed * poinRate;
 
+        $("#poin_info").text(`Poin dipakai: ${poinUsed} (potongan Rp ${formatRupiah(poinCut)})`);
+        $("#use_poin").val(1);
+    } else {
+        $("#poin_info").text(userPoin > 0 ? `Anda memiliki ${userPoin} poin (tidak dipakai).` : `Anda tidak memiliki poin.`);
+        $("#use_poin").val(0);
+    }
+
+    let grandTotal = beforePoints - poinCut;
     if (grandTotal < 0) grandTotal = 0;
 
+    // tampilkan & simpan
     $("#grand_total").text(`Rp ${formatRupiah(grandTotal)}`);
     $("#grand_total_hidden").val(grandTotal);
+
+    // kirim ke backend
+    $("#poin_used").val(poinUsed);
+    $("#poin_cut").val(poinCut);
+    // === Bonus poin (setiap Rp100.000 => +20 poin), tampilkan angka saja ===
+const unitAmount    = 100000;   // 100 ribu
+const pointsPerUnit = 20;       // 20 poin per kelipatan
+const gt            = Math.floor(grandTotal);
+
+const bonusPoin = Math.floor(gt / unitAmount) * pointsPerUnit;
+
+$("#bonus_poin_value").text(bonusPoin);
+$("#expected_bonus_poin").val(bonusPoin); // kalau mau kirim ke backend
 }
 
 
-// 🔹 Format angka ke Rupiah
 function formatRupiah(angka) {
-    return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return (angka || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
+
+
+
+
+
+
 
 
 </script>

@@ -12,6 +12,7 @@ class PoinUser extends Model
     protected $fillable = [
         'user_id',
         'total_poin',
+        'expired_at' => 'datetime',
     ];
 
     public function histories()

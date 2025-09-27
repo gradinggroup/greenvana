@@ -20,4 +20,10 @@ class Products extends Model
     {
         return $this->belongsTo(Brand::class, 'brand_id','id');
     }
+    // App\Models\Product.php
+public function reviews()
+{
+    return $this->hasMany(\App\Models\ProductReview::class);
+}
+    
 }
